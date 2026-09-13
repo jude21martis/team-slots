@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Team Slot Booking Hub</title>
-    <!-- FIX: Loaded the correct, official Supabase script package bundle -->
-    <script src="https://jsdelivr.net"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px; color: #1f2937; }
         main { max-width: 800px; margin: 0 auto; }
@@ -33,12 +31,6 @@
 </head>
 <body>
 
-    <!-- Saved with your custom active keys -->
-    <script>
-        const SUPABASE_URL = "https://sqxboymanotmwbezmzup.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxeGJveW1hbm90bXdiZXptenVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyOTI5MDUsImV4cCI6MjEwNDg2ODkwNX0.WEINfk47myL54VbRdgvsjc55FhS-ORuXOWYEU-wG8sY";
-    </script>
-
     <main>
         <!-- JXJ SETUP PANEL -->
         <div class="banner jxj">
@@ -46,14 +38,14 @@
                 <h2 style="margin:0;">👑 JXJ Setup & Management Dashboard</h2>
                 <p style="margin:5px 0 0 0; opacity:0.8; font-size:13px;">Click the button on the right to load your work schedule template into the database.</p>
             </div>
-            <button onclick="clearAndReinitializeDatabase()" class="reset-btn">🔄 Reset/Init Base Slots</button>
+            <button id="init-btn" class="reset-btn">🔄 Reset/Init Base Slots</button>
         </div>
 
         <!-- PENDING QUEUE FEED -->
         <div class="card">
             <h3 style="margin:0 0 15px 0;">📥 JXJ Pending Requests Queue</h3>
             <div id="jxj-pending-list">
-                <div style="color:#9ca3af; font-style:italic; font-size:14px;">Connecting to database tracks...</div>
+                <div style="color:#4f46e5; font-weight:600;">Connecting to database tracks...</div>
             </div>
         </div>
 
@@ -78,14 +70,21 @@
                     </select>
                 </div>
             </div>
-            <button onclick="requestSlot()" class="submit-btn">Submit Request to JXJ</button>
+            <button id="submit-btn" class="submit-btn">Submit Request to JXJ</button>
         </div>
 
         <h3 style="margin:0 0 15px 0;">📊 Live Schedule Board (All Members View)</h3>
         <div id="member-slots-grid" class="grid-board"></div>
     </main>
 
-    <script>
+    <!-- Unified Module Sandbox Script Container -->
+    <script type="module">
+        import { createClient } from "https://esm.sh";
+
+        // FIX: Placed inside the scope module boundary so variables are readable
+        const SUPABASE_URL = "https://supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxeGJveW1hbm90bXdiZXptenVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyOTI5MDUsImV4cCI6MjEwNDg2ODkwNX0.WEINfk47myL54VbRdgvsjc55FhS-ORuXOWYEU-wG8sY";
+
         let supabaseClient;
         let slots = [];
         
@@ -96,9 +95,13 @@
             "Friday - 03:00 PM to 05:00 PM"
         ];
 
-        function initSupabase() {
-            if (SUPABASE_URL.includes("YOUR_SUPABASE_PROJECT_URL")) return;
-            supabaseClient = supabase.createClient(SUPABASE_URL.trim(), SUPABASE_ANON_KEY.trim());
+        function initApp() {
+            supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            
+            // Map actions safely to button clicks
+            document.getElementById('init-btn').onclick = clearAndReinitializeDatabase;
+            document.getElementById('submit-btn').onclick = requestSlot;
+            
             fetchSlots();
             setInterval(fetchSlots, 5000);
         }
@@ -114,8 +117,10 @@
                 slots = data || [];
                 renderApplicationViews();
             } catch (err) {
-                console.error("Database tracking anomaly:", err);
-                document.getElementById('jxj-pending-list').innerHTML = `<div style="color:#b91c1c; font-weight:500;">❌ Connection Anomaly: ${err.message}<br><span style="font-size:12px; font-weight:normal; color:#4b5563;">Ensure table is named 'team_slots' and RLS policies allow public access.</span></div>`;
+                console.error(err);
+                document.getElementById('jxj-pending-list').innerHTML = `
+                    <div style="color:#b91c1c; font-weight:500;">❌ Pipeline Sync Anomaly: ${err.message}<br>
+                    <span style="font-size:12px; font-weight:normal; color:#4b5563;">Confirm settings, verify table name is 'team_slots', and check that public RLS permissions are active.</span></div>`;
             }
         }
 
@@ -126,10 +131,8 @@
                     status: "Available",
                     requested_by: ""
                 }));
-
                 const { error } = await supabaseClient.from('team_slots').insert(payload);
                 if (error) throw error;
-
                 alert("Base schedule setup completed successfully!");
                 fetchSlots();
             } catch (err) {
@@ -153,7 +156,7 @@
             const name = nameEl.value.trim();
             const slotId = selectEl.value;
 
-            if (!name || !slotId) return alert("Please fill in your name and select a slot.");
+            if (!name || !slotId) return alert("Please type your name and select a slot.");
 
             try {
                 const { error } = await supabaseClient
@@ -195,8 +198,3 @@
 
             memberGrid.innerHTML = "";
             selectEl.innerHTML = `<option value="" disabled selected>Choose an available slot...</option>`;
-            pendingList.innerHTML = "";
-
-            let pendingCounter = 0;
-
-            if (slots.length === 0) {
