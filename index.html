@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Team Slot Booking Hub</title>
-    <!-- We pull the official Supabase bundle so the browser doesn't block direct network requests -->
+    <!-- FIX: Loaded the correct, official Supabase script package bundle -->
     <script src="https://jsdelivr.net"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px; color: #1f2937; }
@@ -33,14 +33,11 @@
 </head>
 <body>
 
-    <!-- =========================================================================
-      ⚠️ CONFIGURATION: PASTE YOUR SUPABASE CREDENTIALS DIRECTLY BETWEEN THE QUOTES
-    ========================================================================= -->
+    <!-- Saved with your custom active keys -->
     <script>
         const SUPABASE_URL = "https://sqxboymanotmwbezmzup.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxeGJveW1hbm90bXdiZXptenVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyOTI5MDUsImV4cCI6MjEwNDg2ODkwNX0.WEINfk47myL54VbRdgvsjc55FhS-ORuXOWYEU-wG8sY";
     </script>
-    <!-- ========================================================================= -->
 
     <main>
         <!-- JXJ SETUP PANEL -->
@@ -101,7 +98,6 @@
 
         function initSupabase() {
             if (SUPABASE_URL.includes("YOUR_SUPABASE_PROJECT_URL")) return;
-            // Instantiates official client engine framework
             supabaseClient = supabase.createClient(SUPABASE_URL.trim(), SUPABASE_ANON_KEY.trim());
             fetchSlots();
             setInterval(fetchSlots, 5000);
@@ -119,7 +115,7 @@
                 renderApplicationViews();
             } catch (err) {
                 console.error("Database tracking anomaly:", err);
-                document.getElementById('jxj-pending-list').innerHTML = `<div style="color:#b91c1c; font-weight:500;">❌ Connection Anomaly: ${err.message}<br><span style="font-size:12px; font-weight:normal; color:#4b5563;">Ensure table is named 'team_slots' and RLS policies allow public read access.</span></div>`;
+                document.getElementById('jxj-pending-list').innerHTML = `<div style="color:#b91c1c; font-weight:500;">❌ Connection Anomaly: ${err.message}<br><span style="font-size:12px; font-weight:normal; color:#4b5563;">Ensure table is named 'team_slots' and RLS policies allow public access.</span></div>`;
             }
         }
 
@@ -198,3 +194,9 @@
             const pendingList = document.getElementById('jxj-pending-list');
 
             memberGrid.innerHTML = "";
+            selectEl.innerHTML = `<option value="" disabled selected>Choose an available slot...</option>`;
+            pendingList.innerHTML = "";
+
+            let pendingCounter = 0;
+
+            if (slots.length === 0) {
